@@ -30,7 +30,7 @@ func main() {
 	}
 	defer listener.Close()
 
-	Server := StartNewServer()
+	server := StartNewServer()
 	fmt.Println("Chat started at port :1234")
 
 	for {
@@ -39,7 +39,7 @@ func main() {
 			log.Println("Failed to accept connection: ", err)
 			continue
 		}
-		go Server.HandleConnection(conn)
+		go server.HandleConnection(conn)
 	}
 }
 
