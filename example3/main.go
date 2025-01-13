@@ -54,11 +54,11 @@ func StartNewServer() *Server {
 // method to enable brodcastng of the sms to all the clients
 func (s *Server) Broadcast(sender net.Conn, sms string) {
 	s.Mu.Lock()
-	defer s.Mu.Lock()
+	defer s.Mu.Unlock()
 
 	for conn := range s.Clients {
 		if conn != sender { // this enables not to send sms back to sender
-			fmt.Fprintf(conn, "%s: %s\n", s.Clients[conn], sms)
+			fmt.Fprintf(conn, "%s: %s\n", s.Clients[sender].UserName, sms)
 		}
 	}
 }
@@ -77,7 +77,6 @@ func (s *Server) HandleConnection(conn net.Conn) {
 
 	// enabling the user to entr there user names and add them to the server
 	fmt.Fprint(conn, "Enter Username: ")
-
 	scanner := bufio.NewScanner(conn)
 	scanner.Scan()
 	userName := scanner.Text()
