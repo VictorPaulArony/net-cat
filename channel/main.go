@@ -15,12 +15,13 @@ type Client struct {
 }
 
 type Server struct {
-	Clients    map[net.Conn]Client
-	JoinCh     chan Client
-	SmsCh      chan Message
-	LeaveCh    chan net.Conn
-	MaxClients int
-	Mu         sync.Mutex
+	Clients        map[net.Conn]Client
+	JoinCh         chan Client
+	SmsCh          chan Message
+	LeaveCh        chan net.Conn
+	MaxClients     int
+	Mu             sync.Mutex
+	MessageHistory []Message // Store history of messages
 }
 
 type Message struct {
@@ -56,11 +57,12 @@ func main() {
 // function to start the server connection for the clients
 func StartNewServer() *Server {
 	return &Server{
-		Clients:    make(map[net.Conn]Client),
-		JoinCh:     make(chan Client),
-		SmsCh:      make(chan Message),
-		LeaveCh:    make(chan net.Conn),
-		MaxClients: 10,
+		Clients:        make(map[net.Conn]Client),
+		JoinCh:         make(chan Client),
+		SmsCh:          make(chan Message),
+		LeaveCh:        make(chan net.Conn),
+		MaxClients:     10,
+		MessageHistory: []Message{},
 	}
 }
 
@@ -80,6 +82,13 @@ func (s *Server) HandleConnection(conn net.Conn) {
 
 	// Notify the server to add the new client to the connection
 	s.JoinCh <- client
+
+	// Send all previous messages to the new client
+	s.Mu.Lock()
+	for _, sms := range s.MessageHistory {
+		fmt.Fprintf(conn, "%s: %s\n", s.Clients[sms.Sender].UserName, sms.Sms)
+	}
+	s.Mu.Unlock()
 
 	// handling of the client sms after joining the connection
 	for scanner.Scan() {
@@ -106,9 +115,13 @@ func (s *Server) BroadcastSms(sender net.Conn, sms string) {
 func (s *Server) Broadcast() {
 	for sms := range s.SmsCh {
 		s.Mu.Lock()
+
+		// Store the message in history
+		s.MessageHistory = append(s.MessageHistory, sms)
+
 		for conn := range s.Clients {
 			if conn != sms.Sender {
-				fmt.Fprintf(conn, "[%s]:[%s]\n", s.Clients[sms.Sender].UserName, sms.Sms)
+				fmt.Fprintf(conn, "[%s]: %s\n", s.Clients[sms.Sender].UserName, sms.Sms)
 			}
 		}
 		s.Mu.Unlock()
