@@ -121,7 +121,7 @@ func (s *Server) Broadcast() {
 
 		for conn := range s.Clients {
 			if conn != sms.Sender {
-				fmt.Fprintf(conn, "[%s]: %s\n", s.Clients[sms.Sender].UserName, sms.Sms)
+				fmt.Fprintf(conn, " %s %s\n", s.Clients[sms.Sender].UserName, sms.Sms)
 			}
 		}
 		s.Mu.Unlock()
@@ -136,19 +136,19 @@ func (s *Server) ManageClients() {
 			s.Mu.Lock()
 			if len(s.Clients) >= s.MaxClients {
 				s.Mu.Unlock()
-				client.Conn.Write([]byte("Server is full. Please try again later.\n"))
+				client.Conn.Write([]byte(" Server is full. Please try again later.\n"))
 				client.Conn.Close()
 				continue
 			}
 			s.Clients[client.Conn] = client
 			s.Mu.Unlock()
-			s.BroadcastSms(client.Conn, "has joined the chat")
+			s.BroadcastSms(client.Conn, "has joined the chat....")
 
 		case conn := <-s.LeaveCh:
 			s.Mu.Lock()
 			delete(s.Clients, conn)
 			s.Mu.Unlock()
-			s.BroadcastSms(conn, "has left the chat")
+			s.BroadcastSms(conn, "has left the chat....")
 		}
 	}
 }
