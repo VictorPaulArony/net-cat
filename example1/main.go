@@ -24,7 +24,7 @@ func main() {
 	}
 	defer listener.Close()
 	fmt.Println("Connection started at port 1234")
-	fmt.Println("Clients can connect using: nc localhost 8080")
+	fmt.Println("Clients can connect using: nc localhost 1234")
 
 	for {
 		conn, err := listener.Accept()
